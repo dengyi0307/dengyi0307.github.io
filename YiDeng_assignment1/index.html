@@ -8,53 +8,33 @@
             list-style: none;
         }
         #playlist li a{
-            color:black;
+            color:grey;
             text-decoration: none;
         }
         #playlist .current-song a{
-            color:red;
+            color:black;
         }
-
-
     </style>
 </head>
 <body>
     <audio src = "" controls id="audioPlayer">
-        The browser does not support html5
+        Please check that if your browser supports html5
     </audio>
     <ul id="playlist">
-        <li class="current-song"><a href="Meow.mp3">Meow</a></li>
-        <li><a href="OldSchool.mp3">Old School</a></li>
-        <li><a href="RedLily.mp3">Red Lily</a></li>
-        <li><a href="Story.mp3">Story</a></li>
+        <li class="current-song"><a href="Meow.mp3">Song1</a></li>
+        <li><a href="OldSchool.mp3">Song2</a></li>
+        <li><a href="RedLily.mp3">Song3</a></li>
+        <li><a href="Story.mp3">Song4</a></li>
     </ul>
-    <script src="https://code.jquery.com/jquery-2.2.0.js">
+    
+    <button class="nextsong" onclick="nextSong()">Next Song</button>
+   
+   <script src="https://code.jquery.com/jquery-2.2.0.js">
     </script>
+    
+    <script src="script.js"></script>
     <script>
-        audioPlayer();
-        function audioPlayer(){
-            var currentSong = 0;
-            $("#audioPlayer")[0].src = $("#playlist li a")[0];
-            $("#audioPlayer")[0].play();
-            $("#playlist li a").click(function(e){
-                e.preventDefault();
-                $("#audioPlayer")[0].src = this;
-                $("#audioPlayer")[0].play();
-                $("#playlist li").removeClass("current-song");
-                currentSong = $(this).parent().index();
-                $(this).parent.addClass("current-song");
-            });
-
-            $("#audioPlayer")[0].addEventListener("ended", function(){
-                currentSong++;
-                if(currentSong == $("#playlist li a").length)
-                    currentSong = 0;
-                $("#playlist li").removeClass("current-song");
-                $("#playlist li:eq("+currentSong+")").addClass("current-song");
-                $("#audioPlayer")[0].src = $("#playlist li a")[currentSong].href;
-                $("#audioPlayer")[0].play();
-            });  
-        }
+        audioPlayer();    
     </script>
 </body>
 </html>
