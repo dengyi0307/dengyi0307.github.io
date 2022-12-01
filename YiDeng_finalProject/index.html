@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scalre=1.0">
+    <link rel="stylesheet" href="./styles.css">
+    <title>Yi Deng _ DrumKit</title>
+    <style>
+    </style>
+</head>
+<body>
+    <div class="flex">
+        <form class="flex-item">
+          <button type="button" id="acoustic" class="stylebutton" onclick="acousticDrum()">Acoustic</button>
+        </form>
+      
+        <form class="flex-item">
+          <button type="button" id="electronic" class="stylebutton" onclick="electronicDrum()">Electronic</button>
+        </form>
+    </div>
+    <div class="drumkit">
+        <div id="d1" class="pad" data-sound="a-clap"><img src="./icons/clap.png" alt="clap"></div>
+        <div id="d2" class="pad" data-sound="a-snare"><img src="./icons/snare.png" alt="snare"></div>
+        <div id="d3" class="pad" data-sound="a-kick"><img src="./icons/kick.png" alt="kick"></div>
+        <div id="d4" class="pad" data-sound="a-tomlow"><img src="./icons/tom-low.png" alt="tl"></div>
+        <div id="d5" class="pad" data-sound="a-crash"><img src="./icons/crash.png" alt="crash"></div>
+        <div id="d6" class="pad" data-sound="a-hihatclose"><img src="./icons/hi-hat-close.png" alt="hc"></div>
+        <div id="d7" class="pad" data-sound="a-hihatopen"><img src="./icons/hi-hat-open.png" alt="ho"></div>
+        <div id="d8" class="pad" data-sound="a-tomhigh"><img id="img8" src="./icons/tom-high.png" alt="th"></div>
+    </div>
+    
+    <div class="flex-recording">
+      <div class="flex-recordButton">
+        <button class="recordButton" id="record">Start Recording</button>
+      </div>
+      
+      <div class="flex-playback">
+        <audio class="audioPlayer" id="audio" src="" controls></audio>
+      </div>
+    </div>
+    
+    <script src="howler.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
