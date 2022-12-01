@@ -199,8 +199,7 @@ const drumSound = new Howl({
     // 判断录音状态
     // inactive 休息  |  recording 录音中  |  paused 暂停
     if (mediaRecorder.state == 'inactive') {
-      // 开始录制将之前的录音清空 
-      alert('1234')
+      // 开始录制将之前的录音清空
       audioStream.streams = []
       // 释放内存
       if (audioStream.blob) {
