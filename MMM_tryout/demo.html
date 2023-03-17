@@ -1,0 +1,3000 @@
+<!DOCTYPE html>
+<!-- saved from url=(0046)http://www.sfu.ca/~jeffe/MMM/DEMO/v2/demo.html -->
+<html class="mdl-js"><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252"><link rel="stylesheet" href="./demo_files/icon">
+  
+  <link rel="stylesheet" href="./demo_files/material-components-web.min.css">
+  <script src="./demo_files/material-components-web.min.js"></script>
+
+  <link rel="stylesheet" href="./demo_files/material.indigo-pink.min.css">
+  <script defer="" src="./demo_files/material.min.js"></script>
+
+  <link href="./demo_files/css2" rel="stylesheet">
+
+  <script src="./demo_files/jquery.min.js"></script>
+
+<style>
+
+  .small-menu {
+    margin-top: -16px;
+  }
+  .small-font {
+    line-height: 12px;
+    font-size: 12px;
+    height: 20px;
+  }
+  .push-down {
+    margin-top: 12px;
+  }
+  .inst-select {
+    min-width: 190px;
+    margin-bottom: -12px;
+  }
+  .poly-select {
+    min-width: 50px;
+    margin-bottom: -12px;
+  }
+
+  .track {
+    display: grid;
+    margin: 25px;
+    grid-template-columns: 350px 850px;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "controls roll";
+    grid-gap: 20px;
+  }
+
+  .track-controls {
+    display: grid;
+    grid-template-columns: 20px 20px 20px 20px 20px 20px 20px 20px 20px 20px 20px 20px;
+    grid-template-rows: 40px 20px 30px 20px 40px;
+    grid-template-areas: 
+      "delete-button delete-button down-button down-button up-button up-button inst-menu inst-menu inst-menu inst-menu inst-menu inst-menu"
+      "solo-label solo-label solo-label mute-label mute-label mute-label ignore-label ignore-label ignore-label resample-label resample-label resample-label"
+      "solo solo solo mute mute mute ignore ignore ignore resample resample resample"
+      "density-label density-label density-label density-slider density-slider density-slider density-slider density-slider density-slider density-slider density-switch density-switch"
+      "poly-min poly-min poly-min poly-max poly-max poly-max dur-min dur-min dur-min dur-max dur-max dur-max";
+    grid-gap: 5px;
+    padding: 10px;
+    font-family: Roboto;
+  }
+
+  .overlay{
+    display:none;
+    opacity:0.5;
+    background-color:#000;
+    position:fixed;
+    width:100%;
+    height:100%;
+    top:0px;
+    left:0px;
+    z-index:1000;
+  }
+
+  .hyperparam-wrapper {
+    display:none;
+    position: absolute;
+    background-color: #ffffff;
+    top: 50%;
+    left: 50%;
+    margin-top: -290px;
+    margin-left: -240px;
+    height: 580px;
+    width: 480px;
+    z-index:1001;
+  }
+
+  .hyperparam-controls {
+    display: grid;
+    margin: 20px;
+    grid-template-columns: 40px 200px 200px;
+    grid-template-rows: 60px 60px 60px 60px 60px 60px 60px 60px 60px;
+    grid-template-areas: 
+      "close close close"
+      ". param3 param3-select" /* track per step */
+      ". param4 param4-select" /* bar per step */
+      ". param6 param6-select" /* shuffle */
+      ". param7 param7-select" /* percentage */
+      ". param8 param8-select" /* temperature */
+      ". param9 param9-select"; /* model dim */
+    font-family: Roboto;
+  }
+
+  .header {
+    width: 1200px;
+    display: grid;
+    margin: 10px;
+    grid-template-columns: 150px 150px 150px 150px 150px 150px 150px;
+    grid-template-rows: 60px;
+    grid-template-areas: 
+      "add-midi add-track clear-tracks generate play download hyperparam";
+    grid-gap: 10px;
+  }
+
+  .noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+  }
+
+</style>
+
+<!-- switch template -->
+<template></template>
+
+<!-- symbol button template -->
+<template></template>
+
+<!-- menu item template -->
+<template></template>
+
+<!--- menu template -->
+<template></template>
+
+<!-- button template -->
+<template></template>
+
+<!-- slider template -->
+<template></template>
+
+<!-- track controls template -->
+<template></template>
+
+<!-- hyperparamters template -->
+<template></template>
+
+<script>
+
+  var INST_MAP = {'acoustic_grand_piano': 0, 'bright_acoustic_piano': 1, 'electric_grand_piano': 2, 'honky_tonk_piano': 3, 'electric_piano_1': 4, 'electric_piano_2': 5, 'harpsichord': 6, 'clavi': 7, 'celesta': 8, 'glockenspiel': 9, 'music_box': 10, 'vibraphone': 11, 'marimba': 12, 'xylophone': 13, 'tubular_bells': 14, 'dulcimer': 15, 'drawbar_organ': 16, 'percussive_organ': 17, 'rock_organ': 18, 'church_organ': 19, 'reed_organ': 20, 'accordion': 21, 'harmonica': 22, 'tango_accordion': 23, 'acoustic_guitar_nylon': 24, 'acoustic_guitar_steel': 25, 'electric_guitar_jazz': 26, 'electric_guitar_clean': 27, 'electric_guitar_muted': 28, 'overdriven_guitar': 29, 'distortion_guitar': 30, 'guitar_harmonics': 31, 'acoustic_bass': 32, 'electric_bass_finger': 33, 'electric_bass_pick': 34, 'fretless_bass': 35, 'slap_bass_1': 36, 'slap_bass_2': 37, 'synth_bass_1': 38, 'synth_bass_2': 39, 'violin': 40, 'viola': 41, 'cello': 42, 'contrabass': 43, 'tremolo_strings': 44, 'pizzicato_strings': 45, 'orchestral_harp': 46, 'timpani': 47, 'string_ensemble_1': 48, 'string_ensemble_2': 49, 'synth_strings_1': 50, 'synth_strings_2': 51, 'choir_aahs': 52, 'voice_oohs': 53, 'synth_voice': 54, 'orchestra_hit': 55, 'trumpet': 56, 'trombone': 57, 'tuba': 58, 'muted_trumpet': 59, 'french_horn': 60, 'brass_section': 61, 'synth_brass_1': 62, 'synth_brass_2': 63, 'soprano_sax': 64, 'alto_sax': 65, 'tenor_sax': 66, 'baritone_sax': 67, 'oboe': 68, 'english_horn': 69, 'bassoon': 70, 'clarinet': 71, 'piccolo': 72, 'flute': 73, 'recorder': 74, 'pan_flute': 75, 'blown_bottle': 76, 'shakuhachi': 77, 'whistle': 78, 'ocarina': 79, 'lead_1_square': 80, 'lead_2_sawtooth': 81, 'lead_3_calliope': 82, 'lead_4_chiff': 83, 'lead_5_charang': 84, 'lead_6_voice': 85, 'lead_7_fifths': 86, 'lead_8_bass__lead': 87, 'pad_1_new_age': 88, 'pad_2_warm': 89, 'pad_3_polysynth': 90, 'pad_4_choir': 91, 'pad_5_bowed': 92, 'pad_6_metallic': 93, 'pad_7_halo': 94, 'pad_8_sweep': 95, 'fx_1_rain': 96, 'fx_2_soundtrack': 97, 'fx_3_crystal': 98, 'fx_4_atmosphere': 99, 'fx_5_brightness': 100, 'fx_6_goblins': 101, 'fx_7_echoes': 102, 'fx_8_sci_fi': 103, 'sitar': 104, 'banjo': 105, 'shamisen': 106, 'koto': 107, 'kalimba': 108, 'bag_pipe': 109, 'fiddle': 110, 'shanai': 111, 'tinkle_bell': 112, 'agogo': 113, 'steel_drums': 114, 'woodblock': 115, 'taiko_drum': 116, 'melodic_tom': 117, 'synth_drum': 118, 'reverse_cymbal': 119, 'guitar_fret_noise': 120, 'breath_noise': 121, 'seashore': 122, 'bird_tweet': 123, 'telephone_ring': 124, 'helicopter': 125, 'applause': 126, 'gunshot': 127, 'drum_0': 0, 'drum_1': 1, 'drum_2': 2, 'drum_3': 3, 'drum_4': 4, 'drum_5': 5, 'drum_6': 6, 'drum_7': 7, 'drum_8': 8, 'drum_9': 9, 'drum_10': 10, 'drum_11': 11, 'drum_12': 12, 'drum_13': 13, 'drum_14': 14, 'drum_15': 15, 'drum_16': 16, 'drum_17': 17, 'drum_18': 18, 'drum_19': 19, 'drum_20': 20, 'drum_21': 21, 'drum_22': 22, 'drum_23': 23, 'drum_24': 24, 'drum_25': 25, 'drum_26': 26, 'drum_27': 27, 'drum_28': 28, 'drum_29': 29, 'drum_30': 30, 'drum_31': 31, 'drum_32': 32, 'drum_33': 33, 'drum_34': 34, 'drum_35': 35, 'drum_36': 36, 'drum_37': 37, 'drum_38': 38, 'drum_39': 39, 'drum_40': 40, 'drum_41': 41, 'drum_42': 42, 'drum_43': 43, 'drum_44': 44, 'drum_45': 45, 'drum_46': 46, 'drum_47': 47, 'drum_48': 48, 'drum_49': 49, 'drum_50': 50, 'drum_51': 51, 'drum_52': 52, 'drum_53': 53, 'drum_54': 54, 'drum_55': 55, 'drum_56': 56, 'drum_57': 57, 'drum_58': 58, 'drum_59': 59, 'drum_60': 60, 'drum_61': 61, 'drum_62': 62, 'drum_63': 63, 'drum_64': 64, 'drum_65': 65, 'drum_66': 66, 'drum_67': 67, 'drum_68': 68, 'drum_69': 69, 'drum_70': 70, 'drum_71': 71, 'drum_72': 72, 'drum_73': 73, 'drum_74': 74, 'drum_75': 75, 'drum_76': 76, 'drum_77': 77, 'drum_78': 78, 'drum_79': 79, 'drum_80': 80, 'drum_81': 81, 'drum_82': 82, 'drum_83': 83, 'drum_84': 84, 'drum_85': 85, 'drum_86': 86, 'drum_87': 87, 'drum_88': 88, 'drum_89': 89, 'drum_90': 90, 'drum_91': 91, 'drum_92': 92, 'drum_93': 93, 'drum_94': 94, 'drum_95': 95, 'drum_96': 96, 'drum_97': 97, 'drum_98': 98, 'drum_99': 99, 'drum_100': 100, 'drum_101': 101, 'drum_102': 102, 'drum_103': 103, 'drum_104': 104, 'drum_105': 105, 'drum_106': 106, 'drum_107': 107, 'drum_108': 108, 'drum_109': 109, 'drum_110': 110, 'drum_111': 111, 'drum_112': 112, 'drum_113': 113, 'drum_114': 114, 'drum_115': 115, 'drum_116': 116, 'drum_117': 117, 'drum_118': 118, 'drum_119': 119, 'drum_120': 120, 'drum_121': 121, 'drum_122': 122, 'drum_123': 123, 'drum_124': 124, 'drum_125': 125, 'drum_126': 126, 'drum_127': 127};
+
+  var REV_INST_MAP = {0: 'acoustic_grand_piano', 1: 'bright_acoustic_piano', 2: 'electric_grand_piano', 3: 'honky_tonk_piano', 4: 'electric_piano_1', 5: 'electric_piano_2', 6: 'harpsichord', 7: 'clavi', 8: 'celesta', 9: 'glockenspiel', 10: 'music_box', 11: 'vibraphone', 12: 'marimba', 13: 'xylophone', 14: 'tubular_bells', 15: 'dulcimer', 16: 'drawbar_organ', 17: 'percussive_organ', 18: 'rock_organ', 19: 'church_organ', 20: 'reed_organ', 21: 'accordion', 22: 'harmonica', 23: 'tango_accordion', 24: 'acoustic_guitar_nylon', 25: 'acoustic_guitar_steel', 26: 'electric_guitar_jazz', 27: 'electric_guitar_clean', 28: 'electric_guitar_muted', 29: 'overdriven_guitar', 30: 'distortion_guitar', 31: 'guitar_harmonics', 32: 'acoustic_bass', 33: 'electric_bass_finger', 34: 'electric_bass_pick', 35: 'fretless_bass', 36: 'slap_bass_1', 37: 'slap_bass_2', 38: 'synth_bass_1', 39: 'synth_bass_2', 40: 'violin', 41: 'viola', 42: 'cello', 43: 'contrabass', 44: 'tremolo_strings', 45: 'pizzicato_strings', 46: 'orchestral_harp', 47: 'timpani', 48: 'string_ensemble_1', 49: 'string_ensemble_2', 50: 'synth_strings_1', 51: 'synth_strings_2', 52: 'choir_aahs', 53: 'voice_oohs', 54: 'synth_voice', 55: 'orchestra_hit', 56: 'trumpet', 57: 'trombone', 58: 'tuba', 59: 'muted_trumpet', 60: 'french_horn', 61: 'brass_section', 62: 'synth_brass_1', 63: 'synth_brass_2', 64: 'soprano_sax', 65: 'alto_sax', 66: 'tenor_sax', 67: 'baritone_sax', 68: 'oboe', 69: 'english_horn', 70: 'bassoon', 71: 'clarinet', 72: 'piccolo', 73: 'flute', 74: 'recorder', 75: 'pan_flute', 76: 'blown_bottle', 77: 'shakuhachi', 78: 'whistle', 79: 'ocarina', 80: 'lead_1_square', 81: 'lead_2_sawtooth', 82: 'lead_3_calliope', 83: 'lead_4_chiff', 84: 'lead_5_charang', 85: 'lead_6_voice', 86: 'lead_7_fifths', 87: 'lead_8_bass__lead', 88: 'pad_1_new_age', 89: 'pad_2_warm', 90: 'pad_3_polysynth', 91: 'pad_4_choir', 92: 'pad_5_bowed', 93: 'pad_6_metallic', 94: 'pad_7_halo', 95: 'pad_8_sweep', 96: 'fx_1_rain', 97: 'fx_2_soundtrack', 98: 'fx_3_crystal', 99: 'fx_4_atmosphere', 100: 'fx_5_brightness', 101: 'fx_6_goblins', 102: 'fx_7_echoes', 103: 'fx_8_sci_fi', 104: 'sitar', 105: 'banjo', 106: 'shamisen', 107: 'koto', 108: 'kalimba', 109: 'bag_pipe', 110: 'fiddle', 111: 'shanai', 112: 'tinkle_bell', 113: 'agogo', 114: 'steel_drums', 115: 'woodblock', 116: 'taiko_drum', 117: 'melodic_tom', 118: 'synth_drum', 119: 'reverse_cymbal', 120: 'guitar_fret_noise', 121: 'breath_noise', 122: 'seashore', 123: 'bird_tweet', 124: 'telephone_ring', 125: 'helicopter', 126: 'applause', 127: 'gunshot', 128: 'drum_0', 129: 'drum_1', 130: 'drum_2', 131: 'drum_3', 132: 'drum_4', 133: 'drum_5', 134: 'drum_6', 135: 'drum_7', 136: 'drum_8', 137: 'drum_9', 138: 'drum_10', 139: 'drum_11', 140: 'drum_12', 141: 'drum_13', 142: 'drum_14', 143: 'drum_15', 144: 'drum_16', 145: 'drum_17', 146: 'drum_18', 147: 'drum_19', 148: 'drum_20', 149: 'drum_21', 150: 'drum_22', 151: 'drum_23', 152: 'drum_24', 153: 'drum_25', 154: 'drum_26', 155: 'drum_27', 156: 'drum_28', 157: 'drum_29', 158: 'drum_30', 159: 'drum_31', 160: 'drum_32', 161: 'drum_33', 162: 'drum_34', 163: 'drum_35', 164: 'drum_36', 165: 'drum_37', 166: 'drum_38', 167: 'drum_39', 168: 'drum_40', 169: 'drum_41', 170: 'drum_42', 171: 'drum_43', 172: 'drum_44', 173: 'drum_45', 174: 'drum_46', 175: 'drum_47', 176: 'drum_48', 177: 'drum_49', 178: 'drum_50', 179: 'drum_51', 180: 'drum_52', 181: 'drum_53', 182: 'drum_54', 183: 'drum_55', 184: 'drum_56', 185: 'drum_57', 186: 'drum_58', 187: 'drum_59', 188: 'drum_60', 189: 'drum_61', 190: 'drum_62', 191: 'drum_63', 192: 'drum_64', 193: 'drum_65', 194: 'drum_66', 195: 'drum_67', 196: 'drum_68', 197: 'drum_69', 198: 'drum_70', 199: 'drum_71', 200: 'drum_72', 201: 'drum_73', 202: 'drum_74', 203: 'drum_75', 204: 'drum_76', 205: 'drum_77', 206: 'drum_78', 207: 'drum_79', 208: 'drum_80', 209: 'drum_81', 210: 'drum_82', 211: 'drum_83', 212: 'drum_84', 213: 'drum_85', 214: 'drum_86', 215: 'drum_87', 216: 'drum_88', 217: 'drum_89', 218: 'drum_90', 219: 'drum_91', 220: 'drum_92', 221: 'drum_93', 222: 'drum_94', 223: 'drum_95', 224: 'drum_96', 225: 'drum_97', 226: 'drum_98', 227: 'drum_99', 228: 'drum_100', 229: 'drum_101', 230: 'drum_102', 231: 'drum_103', 232: 'drum_104', 233: 'drum_105', 234: 'drum_106', 235: 'drum_107', 236: 'drum_108', 237: 'drum_109', 238: 'drum_110', 239: 'drum_111', 240: 'drum_112', 241: 'drum_113', 242: 'drum_114', 243: 'drum_115', 244: 'drum_116', 245: 'drum_117', 246: 'drum_118', 247: 'drum_119', 248: 'drum_120', 249: 'drum_121', 250: 'drum_122', 251: 'drum_123', 252: 'drum_124', 253: 'drum_125', 254: 'drum_126', 255: 'drum_127'};
+
+  const POLY_LEVELS = ["any", "one", "two", "three", "four", "five", "six"];
+  const DUR_LEVELS = ["any", "thirty_second", "sixteenth", "eighth", "quarter", "half", "whole"];
+
+  var HYPERPARAM_OPEN = false;
+  var SNACKBAR = null;
+  var HIGHLIGHT_OPACITY = .2;
+  var CURRENT_NUM_BARS = 16;
+  var TRACK_COUNT = 0;
+  var GOOGLE_COLAB =  (typeof google !== "undefined") && (typeof google.colab !== "undefined");
+
+  const BarLayerEnum = Object.freeze(
+    {"SELECT":0, "IGNORE":1, "CONTEXT":2, "PROGRESS":3, "GENERATED":4});
+  const BarLayerLabelEnum = Object.freeze(
+    {0:"SELECT", 1:"IGNORE", 2:"CONTEXT", 3:"PROGRESS", 4:"GENERATED"});
+
+  // function that takes state to color
+  // and we have enum for different states
+  const BarStateEnum = Object.freeze({"NONE":0, "HIGHLIGHT":1, "IGNORE":2, "GENERATED":3,"LOCKED":4});
+
+  function any(iterable) {
+    for (var index = 0; index < iterable.length; index++) {
+      if (iterable[index]) return true;
+    }
+    return false;
+  }
+  function all(iterable) {
+    for (var index = 0; index < iterable.length; index++) {
+      if (!iterable[index]) return false;
+    }
+    return true;
+  }
+
+  function build_tooltip(tooltip_text, id, parent, right=false) {
+    var tool = document.createElement("DIV");
+    tool.setAttribute("data-mdl-for", id);
+    if (right) {
+      tool.className = "mdl-tooltip mdl-tooltip--right";
+    }
+    else {
+      tool.className = "mdl-tooltip";
+    }
+    tool.textContent = tooltip_text;
+    parent.appendChild(tool);
+  }
+
+  function build_snackbar(message) {
+    SNACKBAR.labelText = message;
+    SNACKBAR.open(); 
+  }
+
+  /////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////
+  /// MIDI RENDERING
+
+  function get_notes(midi_json, track_num) {
+    // we can assume that the midi_json is well formed here
+    var notes = [];
+    var onsets = {};
+
+    var track = midi_json["tracks"][track_num];
+    if ("bars" in track) {
+      var bar_start = 0;
+      var bars = track["bars"];
+      for (var i=0; i<bars.length; i++) {
+        if ("events" in bars[i]) {
+          var events = bars[i]["events"];
+          for (var j=0; j<events.length; j++) {
+            var event = midi_json["events"][events[j]];
+            if (event["velocity"] > 0) {
+              onsets[event["pitch"]] = {"time" : bar_start + event["time"]};
+              //onsets[event["pitch"]]["time"] += bar_start;
+            }
+            else if(event["pitch"] in onsets) {
+              notes.push({
+                "start" : onsets[event["pitch"]]["time"],
+                "end" : bar_start + event["time"],
+                "pitch" : event["pitch"],
+              });
+              delete onsets[event["pitch"]];
+            }
+          }
+        }
+        bar_start += bars[i]["internalBeatLength"] * 12; // resolution
+      }
+    }
+    // handle remaining notes
+    for (var key in onsets) {
+      notes.push({
+        "start" : onsets[key]["time"],
+        "end" : 192,
+        "pitch" : onsets[key]["pitch"],
+      });
+    }
+    return notes;
+  }
+  
+  function build_svg_rect(x, y, width, height, fill="none", stroke="none", stroke_width=0) {
+    var r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    r.style.x = x.toString() + "%";
+    r.style.y = y.toString() + "%";
+    r.style.width = width.toString() + "%";
+    r.style.height = height.toString() + "%";
+    r.style.fill = fill;
+    r.style.stroke = stroke;
+    r.style.strokeWidth = stroke_width;
+    return r;
+  }
+  
+  function update_color(bar) {
+    var state = bar.style.state;
+    if (state == BarStateEnum.NONE) {
+      bar.style.fill = "rgba(0,0,0,0)";
+    }
+    else if (state == BarStateEnum.HIGHLIGHT) {
+      bar.style.fill = "rgba(0,0,255,.3)";
+    }
+    else if (state == BarStateEnum.LOCKED) {
+      bar.style.fill = "rgba(0,0,255,.3)";
+    }
+    else if (state == BarStateEnum.IGNORE) {
+      bar.style.fill = "rgba(255,0,0,.3)";
+    }
+    else if (state == BarStateEnum.GENERATED) {
+      bar.style.fill = "rgba(0,255,0,.3)";
+    }
+    update_color_switches(bar);
+  }
+
+  function get_track_ids() {
+    var track_ids = [];
+    var tracks = $(".track");
+    for (var i=0; i<tracks.length; i++) {
+      track_ids.push( tracks[i].id.split("_")[1] );
+    }
+    return track_ids;
+  }
+
+  function clear_selection() {
+    var track_ids = get_track_ids();
+    track_ids.forEach(function (item, index) {
+      for (var i=0; i<CURRENT_NUM_BARS; i++) {
+        var b = get_bar(item,i)[0];
+        b.style.state = 0;
+        update_color(b);
+      }
+    });
+  }
+
+  function update_color_switches(bar) {
+    var all_highlighted = true;
+    var all_ignored = true;
+    for (var i=0; i<CURRENT_NUM_BARS; i++) {
+      var state = get_bar(bar.track_id,i)[0].style.state;
+      all_highlighted &= (state == BarStateEnum.HIGHLIGHT);
+      all_ignored &= (state == BarStateEnum.IGNORE);
+    }
+    // now using this button to control something else
+    //set_switch(bar.track_id, "resample", all_highlighted);
+    set_switch(bar.track_id, "ignore", all_ignored);
+  }
+  
+  function flip_opacity(x) {
+    if ((x.style.state != BarStateEnum.IGNORE) && (x.style.state != BarStateEnum.LOCKED)) {
+      x.style.state = 1 - (x.style.state > 0);
+      update_color(x);
+    }
+  }
+
+  function get_bar(track, bar) {
+    return $("#highlight_track_" + track.toString() + "_bar_" + bar.toString());
+  }
+
+  function set_bar(track, bar, state, override_ignore) {
+    var b = get_bar(track, bar)[0];
+    if (((b.style.state != BarStateEnum.IGNORE) && (b.style.state != BarStateEnum.LOCKED)) || (override_ignore)) {
+      b.style.state = state;
+      update_color(b);
+    }
+  }
+
+  // resample LOCKS all bars
+  // 
+
+  function set_bars(tracks, bars, state) {
+    for (var i=0; i<tracks.length; i++) {
+      set_bar(tracks[i].toString(), bars[i].toString(), state, false);
+    }
+  }
+
+  // might not need this anymore
+  function get_highlighted_bars(track_id) {
+    var highlighted_bars = [];
+    for (var i=0; i<CURRENT_NUM_BARS; i++) {
+      var bar = get_bar(track_id,i)[0];
+      highlighted_bars.push( 
+        (bar.style.state == BarStateEnum.HIGHLIGHT) || (bar.style.state == BarStateEnum.LOCKED) );
+    }
+    return highlighted_bars;
+  }
+
+
+  function get_bar_layer_id(track_num, bar_num, layer) {
+    return BarLayerLabelEnum[layer] + "_" + track_num.toString() + "_bar_" + bar_num.toString();
+  }
+
+  function get_bar_layer(track_num, bar_num, layer) {
+    var id = get_bar_layer_id(track_num, bar_num, layer);
+    return $("#" + id)[0];
+  }
+
+  function set_bar_layer(track_num, bar_num, layer, state) {
+    var b = get_bar_layer(track_num, bar_num, layer);
+    b.style.state = state;
+    if (state == 1) {
+      if (layer == BarLayerEnum.SELECT) {
+        b.style.fill = "rgba(0,0,255,.3)";
+      }
+      else if (layer == BarLayerEnum.CONTEXT) {
+        b.style.fill = "rgba(255,0,255,.3)";
+      }
+      else if (layer == BarLayerEnum.IGNORE) {
+        b.style.fill = "rgba(255,0,0,.3)";
+      }
+      else if (layer == BarLayerEnum.GENERATED) {
+        b.style.fill = "rgba(0,255,0,.3)";
+      }
+      else if (layer == BarLayerEnum.PROGRESS) {
+        b.style.fill = "rgba(255,255,0,.3)";
+      }
+    }
+    else {
+      b.style.fill = "rgba(0,0,0,0)";
+    }
+  }
+
+  function set_all_layer_bars(x,clear) {
+    if (clear) {
+      clear_selection();
+    }
+    for (var i=0; i<x.length; i++) {
+      set_bar_layer(x[i][0], x[i][1], x[i][2], x[i][3]);
+    }
+  }
+
+  function build_bar(track, i, bar_width, layer) {
+    var b = build_svg_rect(i*bar_width, 0, bar_width, 100, "rgba(0,0,0,0)");
+    b.style.state = 0;
+    b.id = get_bar_layer_id(track, i, layer);
+    b.track_id = track;
+    return b;
+  }
+  
+  function build_pianoroll(midi_json, track_num) {
+    // build piano roll should accept an actual track from the representation
+
+    if (typeof midi_json === 'undefined') {
+      notes = []
+    }
+    else {
+      notes = get_notes(midi_json, track_num);
+      CURRENT_NUM_BARS = midi_json["tracks"][track_num]["bars"].length;
+    }
+
+    nbars = CURRENT_NUM_BARS;
+    var nbeats = 4;
+    
+    var resolution = 12;
+    var max_notes = 128;
+    var xticks = resolution * nbeats * nbars;
+    var beat_width = 100. / (8 * nbars); // eighth note width
+    var beat_color = "#9E9E9E";
+    
+    var bar_width = 100. / nbars; // bar width
+    var bar_colors = ["#A9A9A9", "#B4B4B4"];
+    var small = 1. / xticks / 4; // quarter of a tick width
+  
+    var x = document.createElement("DIV");
+    var s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  
+    s.style.width = "100%";
+    s.style.height = "190px";
+    s.viewBox = "0 0 100 100";
+    s.preserveAspectRatio = "none";
+  
+    // make the bars
+    for (i=0; i<nbars; i++) {
+      s.appendChild(build_svg_rect(i*bar_width, 0, bar_width, 100, bar_colors[i%2]));
+    }
+  
+    // make the beats
+    for (i=0; i<(8*nbars); i++) {
+      s.appendChild(build_svg_rect(i*beat_width, 0, beat_width, 100, "none", beat_color, .15));
+    }
+  
+    // draw the notes
+    for (i=0; i<notes.length; i++) {
+      note = notes[i];
+      var y = 100 - (note["pitch"] / max_notes * 100);
+      var x = note["start"] / xticks  * 100;
+      var w = (((note["end"] - note["start"]) / xticks) - small) * 100;
+      var h = 1. / max_notes * 100;
+      s.appendChild(build_svg_rect(x,y,w,h,"red"));
+    }
+    
+    // make the bar highlights
+    // build a tooltip for the bars ?
+    for (i=0; i<nbars; i++) {
+
+      s.append( build_bar(track_num, i, bar_width, BarLayerEnum.CONTEXT) );
+      s.append( build_bar(track_num, i, bar_width, BarLayerEnum.PROGRESS) );
+      s.append( build_bar(track_num, i, bar_width, BarLayerEnum.GENERATED) );
+      s.append( build_bar(track_num, i, bar_width, BarLayerEnum.IGNORE) );
+      s.append( build_bar(track_num, i, bar_width, BarLayerEnum.SELECT) );
+
+      var b = build_svg_rect(i*bar_width, 0, bar_width, 100, "rgba(0,0,0,0)");
+      //b.style.opacity = 0;
+      b.style.state = 0;
+      b.onclick = function() { flip_opacity(this); };
+      b.id = "highlight_track_" + track_num.toString() + "_bar_" + i.toString();
+      b.track_id = track_num;
+      s.appendChild(b);
+
+      
+    }
+  
+    return s;
+  }  
+
+  //////////////////////////////////////////////////////////////////////////
+
+  function get_switch(track_id, name) {
+    return $("#" + name + "_" + track_id + "-so")[0]
+  }
+
+  function switch_on(track_id, name) {
+    return get_switch(track_id,name).MDCSwitch.checked;
+  }
+
+  function set_switch(track_id, name, state) {
+    get_switch(track_id,name).MDCSwitch.checked = state;
+  }
+
+  var createMuteHandler = function(track_id) {
+    return function() {
+      if (get_switch(track_id,"mute").MDCSwitch.checked) {
+        set_switch(track_id, "solo", false);
+      }
+    };
+  }
+
+  var createSoloHandler = function(track_id) {
+    return function() {
+      if (get_switch(track_id,"solo").MDCSwitch.checked) {
+        set_switch(track_id, "mute", false);
+      }
+    };
+  }
+
+  var createRemoveHandler = function(track_id) {
+    return function() {
+      $("#track_" + track_id).remove();
+    }
+  }
+
+  var createMoveUpHandler = function(track_id) {
+    return function() {
+      var a = $("#track_" + track_id);
+      var b = a.prev();
+      if (b) {
+        a.after(b);
+      }
+    }
+  }
+
+  var createMoveDownHandler = function(track_id) {
+    return function() {
+      var a = $("#track_" + track_id);
+      var b = a.next();
+      if (b) {
+        a.before(b);
+      }
+    }
+  }
+
+  var createResampleHandler = function(track_id) {
+    return function() {
+      var state = BarStateEnum.NONE;
+      if (switch_on(track_id, "resample")) {
+        state = BarStateEnum.LOCKED;
+        set_switch(track_id, "ignore", false);
+      }
+      for (var i=0; i<CURRENT_NUM_BARS; i++) {
+        set_bar(track_id, i, state, true);
+      }
+    }
+  }
+
+  var createIgnoreHandler = function(track_id) {
+    return function() {
+      var state = BarStateEnum.NONE;
+      if (switch_on(track_id, "ignore")) {
+        state = BarStateEnum.IGNORE;
+        set_switch(track_id, "resample", false);
+      }
+      for (var i=0; i<CURRENT_NUM_BARS; i++) {
+        set_bar(track_id, i, state, true);
+      }
+    }
+  }
+
+  var createDensitySwitchHandler = function(track_id) {
+    return function() {
+      $("#density-slider_" + track_id + "-slo")[0].MDCSlider.disabled = !$("#density_" + track_id + "-so")[0].MDCSwitch.checked;
+    }
+  }
+  
+  function load_template(n, parent, id, elem_selector) {
+    var tmp = document.getElementsByTagName("template")[n];
+    var node = tmp.content.cloneNode(true);
+    parent.append(node);
+    var elem = parent.find(elem_selector);
+    elem.attr("id", id);
+    return elem;
+  }
+
+  function build_switch(parent, id) {
+    id = id + "-so"
+    load_template(0, parent, id, "div:first");     
+  }
+
+  function build_sym_button(parent, id, button_text) {
+    id = id + "-button"
+    var elem = load_template(1, parent, id, "button:first");
+    elem.text(button_text);
+  }
+
+  function build_slider(parent, id, num_steps) {
+    id = id + "-slo"
+    elem = load_template(5, parent, id, "div:first");
+    elem.attr("aria-valuemax", num_steps-1);
+  }
+
+  function build_menu(parent, name, menu_items, small_menu=false) {
+    id = name + "-mo"
+    el = load_template(3, parent, id, "div:first");
+    if (small_menu) {
+      el.removeClass("inst-select");
+      el.addClass("poly-select");
+    }
+    el.find('.mdc-floating-label').text(name);
+    for (var i=0; i<menu_items.length; i++) {
+      // this could probably be cleaned up
+      var tmp = document.getElementsByTagName("template")[2];
+      var node = tmp.content.cloneNode(true);
+      $(".mdc-list", parent).append(node);
+      var $el = $('.mdc-list li:last', parent);
+      $el.find('.mdc-list-item__text').text(menu_items[i]);
+      $el.attr("data-value", menu_items[i]);
+    }
+  }
+
+  function update_mdc() {
+    componentHandler.upgradeDom();
+    // enable all switches
+    [].map.call(document.querySelectorAll(".mdc-switch"), function(el) {
+      el.MDCSwitch = new mdc.switchControl.MDCSwitch(el);
+    });
+
+    // enable all menus
+    [].map.call(document.querySelectorAll(".mdc-select"), function(el) {
+      el.MDCSelect = new mdc.select.MDCSelect(el);
+    });
+
+    // enable all sliders
+    [].map.call(document.querySelectorAll(".mdc-slider"), function(el) {
+      el.MDCSlider = new mdc.slider.MDCSlider(el);
+    });
+  }
+
+
+  function build_track_controls(track_id) {
+
+    //console.log($("#track_" + track_id).find("#solo-switch"));
+    var track = $("#track_" + track_id);
+    build_switch(track.find("#solo-switch"), "solo_" + track_id);
+    build_switch(track.find("#mute-switch"), "mute_" + track_id);
+    build_switch(track.find("#resample-switch"), "resample_" + track_id);
+    build_switch(track.find("#ignore-switch"), "ignore_" + track_id);
+    build_switch(track.find("#density-switch"), "density_" + track_id);
+
+    build_slider(track.find("#density-slider"), "density-slider_" + track_id, 10);
+
+    
+    build_sym_button(
+      track.find("#delete-button"), "delete_" + track_id, "remove_circle");
+    build_sym_button(
+      track.find("#down-button"), "down_" + track_id, "keyboard_arrow_down");
+    build_sym_button(
+      track.find("#up-button"), "up_" + track_id, "keyboard_arrow_up");
+
+    menu_items = Object.values(REV_INST_MAP);
+    build_menu(track.find("#inst-menu"), "inst_" + track_id, menu_items);
+
+    // make menus for polyphony and note duration
+    build_menu(track.find("#poly-min"),"poly_min_"+track_id, POLY_LEVELS, true);
+    build_menu(track.find("#poly-max"),"poly_max_"+track_id, POLY_LEVELS, true);
+    build_menu(track.find("#dur-min"), "dur_min_" + track_id, DUR_LEVELS, true);
+    build_menu(track.find("#dur-max"), "dur_max_" + track_id, DUR_LEVELS, true);
+
+    $("#delete_" + track_id + "-button").click(createRemoveHandler(track_id));
+    $("#up_" + track_id + "-button").click(createMoveUpHandler(track_id));
+    $("#down_" + track_id + "-button").click(createMoveDownHandler(track_id));
+    $("#resample_" + track_id + "-so").click(createResampleHandler(track_id));
+    $("#density_" + track_id + "-so").click(createDensitySwitchHandler(track_id));
+
+    $("#ignore_" + track_id + "-so").click(createIgnoreHandler(track_id));
+    $("#mute_" + track_id + "-so").click(createMuteHandler(track_id));
+    $("#solo_" + track_id + "-so").click(createSoloHandler(track_id));
+
+    var panel = track.find(".track-controls")[0];
+    build_tooltip("Remove this track.", "delete_" + track_id + "-button", panel);
+    build_tooltip("Move this track up.", "up_" + track_id + "-button", panel);
+    build_tooltip("Move this track down.", "down_" + track_id + "-button", panel);
+    build_tooltip("Mute this track.", "mute_" + track_id + "-so", panel);
+    build_tooltip("Solo this track.", "solo_" + track_id + "-so", panel);
+    build_tooltip("Select an instrument for generation.", "inst_" + track_id + "-mo", panel, true);
+    build_tooltip("Control the note density for generation.", "density-slider" + track_id + "-slo", panel);
+    build_tooltip("Autoregressively resample the entire track. Note that this will ignore all content on this track when generating.", "resample_" + track_id + "-so", panel);
+    build_tooltip("Do not allow the model to condition generation on this track.", "ignore_" + track_id + "-so", panel);
+
+  }
+
+  function build_hyperparam_controls() {
+    load_template(7, $("#hyper-container"), "hyperparam", "div.hyperparam-controls:first");
+    var parent = $("#hyperparam");
+    
+    build_sym_button(parent.find("#close"), "close", "remove_circle");
+    $("#close").click( close_hyperparam );
+    
+    //build_menu(parent.find("#param1-select"), "track_stride", [1,2,3,4,5,6]);
+    //build_menu(parent.find("#param2-select"), "bar_stride", [1,2,3,4,5,6]);
+    build_menu(parent.find("#param3-select"), "tracks_per_step", [1,2,3,4,5,6,7,8]);
+    build_menu(parent.find("#param4-select"), "bars_per_step", [1,2,3,4,5,6,7,8]);
+    build_switch(parent.find("#param6-select"), "shuffle");
+    build_slider(parent.find("#param7-select"), "percentage", 101);
+    build_menu(parent.find("#param8-select"), "temperature", [0.9, 0.95, 0.975, 0.99, 1., 1.01, 1.025, 1.05, 1.1]);
+    build_menu(parent.find("#param9-select"), "model_size", [4, 8]);
+
+    build_tooltip("The maximum number of tracks to generate each step. Selecting a larger value will increase variability of the generated output.", "tracks_per_step-mo", parent[0], true);
+    build_tooltip("The maximum number of bars to generate each step. Selecting a larger value with increase variability of the generated output.", "bars_per_step-mo", parent[0], true);
+    build_tooltip("When shuffle is enabled the order of generation steps is randomly shuffled. Note that this only applies to non-autoregressive tracks", "shuffle-so", parent[0], true);
+    build_tooltip("The percentage of selected bars that are resampled. Note that this only applies to non-autoregressive tracks.", "percentage-slo", parent[0], true);
+    build_tooltip("Set temperature for samping. Values higher than 1 increase entropy and values lower than 1 decrease entropy.", "temperature-mo", parent[0], true);
+    build_tooltip("The number of bars the model can handle. A higher value will take more time, as each generation step takes more context into consideration, but will likely provide a better result.", "model_size-mo", parent[0], true);
+
+    update_mdc();
+
+    //$("#track_stride-mo")[0].MDCSelect.value = "2";
+    //$("#bar_stride-mo")[0].MDCSelect.value = "2";
+    $("#tracks_per_step-mo")[0].MDCSelect.value = "1";
+    $("#bars_per_step-mo")[0].MDCSelect.value = "2";
+    $("#shuffle-so")[0].MDCSwitch.checked = true;
+    $("#percentage-slo")[0].MDCSlider.value = 100;
+    $("#temperature-mo")[0].MDCSelect.value = "1";
+    $("#model_size-mo")[0].MDCSelect.value = "4";
+
+  }
+
+  function build_track(midi_json) {
+    //console.log(density);
+    //console.log(TRACK_COUNT);
+    var track_id = TRACK_COUNT.toString();
+    load_template(6, $("#track-container"), "track_" + track_id, "div.track:last");
+    build_track_controls(track_id);
+
+    var s = build_pianoroll(midi_json, TRACK_COUNT);
+    $("#track_" + track_id).find(".roll")[0].append(s);
+
+    update_mdc();
+
+    // set to default value
+    var inst = "acoustic_grand_piano";
+    var density = 5;
+    var min_poly = "any";
+    var max_poly = "any";
+    var min_dur = "any";
+    var max_dur = "any";
+
+    if (typeof midi_json !== 'undefined') {
+      var isDrum = (midi_json["tracks"][TRACK_COUNT]["trackType"]==11)||(midi_json["tracks"][TRACK_COUNT]["trackType"]=="STANDARD_DRUM_TRACK");
+      var inst_number = midi_json["tracks"][TRACK_COUNT]["instrument"];
+      inst = REV_INST_MAP[inst_number + 128*isDrum];
+
+      var features = midi_json["tracks"][TRACK_COUNT]["internalFeatures"][0];
+      console.log(features);
+      density = features["noteDensityV2"];
+      min_poly = POLY_LEVELS[ features["minPolyphonyQ"] + 1];
+      max_poly = POLY_LEVELS[ features["maxPolyphonyQ"] + 1];
+      min_dur = DUR_LEVELS[ features["minNoteDurationQ"] + 1];
+      max_dur = DUR_LEVELS[ features["maxNoteDurationQ"] + 1];
+    }
+    console.log(min_poly, max_poly);
+    $("#inst_" + track_id + "-mo")[0].MDCSelect.value = inst;
+    $("#poly_min_" + track_id + "-mo")[0].MDCSelect.value = min_poly;
+    $("#poly_max_" + track_id + "-mo")[0].MDCSelect.value = max_poly;
+    $("#dur_min_" + track_id + "-mo")[0].MDCSelect.value = min_dur;
+    $("#dur_max_" + track_id + "-mo")[0].MDCSelect.value = max_dur;
+    $("#density-slider_" + track_id + "-slo")[0].MDCSlider.value = density;
+    $("#density_" + track_id + "-so").trigger("click");
+
+    if (typeof midi_json === 'undefined') {
+      resample_button = $("#resample_" + track_id + "-so");
+      resample_button[0].MDCSwitch.checked = true;
+      resample_button.trigger("click");
+    }
+
+    TRACK_COUNT++;
+  }
+
+  function build_from_midi(midi_json) {
+    clear_tracks(false);
+    for (var i=0; i<midi_json["tracks"].length; i++) {
+      build_track(midi_json);
+    }
+  }
+
+  function check_overlap(l1x, l1y, l2x, l2y, r1x, r1y, r2x, r2y) {
+    //console.log(l1x, l1y, l2x, l2y, r1x, r1y, r2x, r2y, (l1x >= r2x), (l2x >= r1x), (l1y <= r2y), (l2y <= r1y));
+    if ((l1x >= r2x) || (l2x >= r1x)) {
+      return false;
+    }
+    if ((l1y >= r2y) || (l2y >= r1y)) {
+      return false;
+    }
+    return true;
+  }
+
+  MOUSEDOWN = false;
+  DRAGX = 0;
+  DRAGY = 0;
+  SHIFTKEYON = false;
+  LAST_MOVE = 0;
+
+  function build_drag_select() {
+    $("#track-container")
+    .mousedown(function(e) {
+      DRAGX = e.pageX;
+      DRAGY = e.pageY;
+      // only set mousedown if we are to the right of
+      // track controls
+      if (DRAGX > 350) {
+        MOUSEDOWN = true;
+        SHIFTKEYON = e.shiftKey;
+      }
+    })
+    .mousemove(function(e) {
+      if ((MOUSEDOWN) && (!HYPERPARAM_OPEN) && (Date.now() - LAST_MOVE > 40)) {
+        // how can we make this called less frequently
+        var sl = Math.min(DRAGX,e.pageX);
+        var st = Math.min(DRAGY,e.pageY);
+        var sr = Math.max(DRAGX,e.pageX);
+        var sb = Math.max(DRAGY,e.pageY);
+
+        var track_ids = get_track_ids();
+        for (var i=0; i<track_ids.length; i++) {
+          for (var j=0; j<CURRENT_NUM_BARS; j++) {
+            var track_id = track_ids[i];
+            var bar = get_bar(track_id,j);
+            var offset = bar.offset();
+            var overlaps = check_overlap(
+              offset["left"], offset["top"], 
+              sl, st, 
+              offset["left"] + bar.width(), offset["top"] + bar.height(), 
+              sr, sb);
+            if (overlaps) {
+              set_bar(track_id, j, BarStateEnum.HIGHLIGHT, false);
+            }
+            else if (!SHIFTKEYON) {
+              set_bar(track_id, j, BarStateEnum.NONE, false);
+            }
+          }
+        }
+        LAST_MOVE = Date.now();
+      }
+    })
+    .mouseup(function() {
+      MOUSEDOWN = false;
+    });
+  }
+
+
+  function start_up() {
+    build_hyperparam_controls();
+    build_track();
+    build_drag_select();
+
+    // initialize the snackbar
+    var MDCSnackbar = mdc.snackbar.MDCSnackbar;
+    var el = document.getElementById("snackbar");
+    SNACKBAR = new MDCSnackbar(el);
+  }
+
+  document.addEventListener("DOMContentLoaded", function(event) {
+    start_up();
+  });
+
+  ////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
+  // functions for the header
+
+  function add_track() {
+    build_track();
+  }
+
+  function clear_tracks(reset_midi) {
+    $("#track-container").empty();
+    TRACK_COUNT = 0;
+    if (GOOGLE_COLAB && reset_midi) {   
+      google.colab.kernel.invokeFunction("reset_midi", [], {});
+    }
+  }
+
+  function open_hyperparam() {
+    HYPERPARAM_OPEN = true;
+    $(".hyperparam-wrapper").css("display", "grid");
+    $(".overlay").css("display","block");
+    [].map.call($("#hyperparam").find(".mdc-slider"), function(el) {
+      el.MDCSlider = new mdc.slider.MDCSlider(el);
+    });
+  }
+  function close_hyperparam() {
+    HYPERPARAM_OPEN = false;
+    $(".hyperparam-wrapper").css("display", "none");
+    $(".overlay").css("display","none");
+  }
+
+  function get_status() {
+    var can_generate = false;
+    var can_listen = false;
+    var status = {"tracks" : []};
+    var tracks = $(".track");
+    for (var i=0; i<tracks.length; i++) {
+      var track_id = tracks[i].id.split("_")[1];
+      var inst = $("#inst_" + track_id + "-mo")[0].MDCSelect.value;
+      var density = $("#density-slider_" + track_id + "-slo")[0].MDCSlider.value;
+      var density_disabled = $("#density-slider_" + track_id + "-slo")[0].MDCSlider.disabled;
+      var min_poly = $("#poly_min_" + track_id + "-mo")[0].MDCSelect.value;
+      var max_poly = $("#poly_max_" + track_id + "-mo")[0].MDCSelect.value;
+      var min_dur = $("#dur_min_" + track_id + "-mo")[0].MDCSelect.value;
+      var max_dur = $("#dur_max_" + track_id + "-mo")[0].MDCSelect.value;
+      var resample = $("#resample_" + track_id + "-so")[0].MDCSwitch.checked;
+      var mute = $("#mute_" + track_id + "-so")[0].MDCSwitch.checked;
+      var solo = $("#solo_" + track_id + "-so")[0].MDCSwitch.checked;
+      var highlighted_bars = get_highlighted_bars(track_id);
+      if (any(highlighted_bars)) {
+        can_generate = true;
+      }
+      if (solo || !mute) {
+        can_listen = true;
+      }
+
+      density = parseInt(density) + 1;
+      if (density_disabled) {
+        density = 0;
+      }
+
+      var ignore = $("#ignore_" + track_id + "-so")[0].MDCSwitch.checked;
+      var track_type = 10;
+      if (inst.includes("drum_")) {
+        track_type = 11;
+      }
+
+      status["tracks"].push({
+        "track_id" : parseInt(track_id),
+        "instrument" : inst,
+        "instrument_num" : INST_MAP[inst],
+        "density" : density,
+        "track_type" : track_type,
+        "mute" : mute,
+        "solo" : solo,
+        "ignore" : ignore,
+        "resample" : resample,
+        "selected_bars" : highlighted_bars,
+        "min_polyphony_q" : "POLYPHONY_" + min_poly.toUpperCase(),
+        "max_polyphony_q" : "POLYPHONY_" + max_poly.toUpperCase(),
+        "min_note_duration_q" : "DURATION_" + min_dur.toUpperCase(),
+        "max_note_duration_q" : "DURATION_" + max_dur.toUpperCase()
+      });
+    }
+
+    var tempo = "120"; //document.getElementById("tempo").MDCSelect.value;
+    status["temperature"] = parseFloat($("#temperature-mo")[0].MDCSelect.value);
+    status["canGenerate"] = can_generate;
+    status["canListen"] = can_listen;
+    status["tempo"] = parseInt(tempo);
+    status["nbars"] = CURRENT_NUM_BARS;
+
+    //status["track_stride"] = parseInt($("#track_stride-mo")[0].MDCSelect.value);
+    //status["bar_stride"] = parseInt($("#bar_stride-mo")[0].MDCSelect.value);
+    status["tracks_per_step"] = parseInt($("#tracks_per_step-mo")[0].MDCSelect.value);
+    status["bars_per_step"] = parseInt($("#bars_per_step-mo")[0].MDCSelect.value);
+    status["shuffle"] = $("#shuffle-so")[0].MDCSwitch.checked;
+    status["percentage"] = $("#percentage-slo")[0].MDCSlider.value;
+    status["model_dim"] = parseInt($("#model_size-mo")[0].MDCSelect.value);
+
+    console.log(status);
+
+    return status;
+  }
+
+  function add_midi() {
+    //document.getElementById("stems").MDCSelect.value = "NONE";
+    //clear_tracks(false);
+    var floader = document.querySelector("#file_loader");
+    floader.value = "";
+    floader.click();
+    floader.onchange = function() {
+      var file = floader.files[0];
+      var reader = new FileReader();
+      if (GOOGLE_COLAB) {
+        reader.onloadend = function (e) {
+          var status = get_status();
+          google.colab.kernel.invokeFunction("add_midi_callback", [status, this.result], {});
+        }
+        reader.readAsDataURL(file);
+      }
+      else {
+        reader.onloadend = function (e) {
+          build_from_midi(JSON.parse(this.result)["test_16"]["piece"]);
+        }
+        reader.readAsText(file);
+      }
+    }
+  }
+
+  function download_midi() {
+    if (GOOGLE_COLAB) {
+      google.colab.kernel.invokeFunction("download_midi_callback", [], {});
+    }
+  }
+
+  function run_download(encoded_data) {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:audio/midi;base64,' + encoded_data);
+    element.setAttribute('download', "download.mid");
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  }
+
+  function run_download_zip(encoded_data) {
+    var element = document.createElement('a');
+    element.setAttribute('href', 'data:application/zip;base64,' + encoded_data);
+    element.setAttribute('download', "download.zip");
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  }
+
+  function generate() {
+    var status = get_status();
+    if (status["tracks"].length == 0) {
+      build_snackbar("Must add tracks before you can generate.");
+      return;
+    }
+    if (!status["canGenerate"]) {
+      build_snackbar("Must highlight one or more bars (by clicking on them) before you can generate.");
+      return;
+    }
+    if (GOOGLE_COLAB) {
+      google.colab.kernel.invokeFunction("generate_callback", [status], {});
+    }
+  }
+  
+  function play() {
+    var status = get_status();
+    if (status["tracks"].length == 0) {
+      build_snackbar("There are no tracks to play!");
+      return;
+    }
+    if (!status["canListen"]) {
+      build_snackbar("Must unmute or solo at least one track!")
+      return;
+    }
+    if (GOOGLE_COLAB) {
+      google.colab.kernel.invokeFunction("play_callback", [status], {});
+    }
+  }
+
+</script>
+
+</head><body>
+  <div class="header mdc-elevation--z4" id="header" style="margin:25px;">
+    <div style="grid-area: add-midi; justify-self: center; align-self: center">
+      <button class="mdc-button mdc-button--outlined" id="add_midi_button" onclick="add_midi()" tabindex="0">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Add Midi</span>
+      </button>
+    </div>
+    <div style="grid-area: add-track; justify-self: center; align-self: center">
+      <button class="mdc-button mdc-button--outlined" id="add_track_button" onclick="add_track()" tabindex="0">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Add Track</span>
+      </button>
+    </div>
+    <div style="grid-area: clear-tracks; justify-self: center; align-self: center">
+      <button class="mdc-button mdc-button--outlined" id="clear_tracks_button" onclick="clear_tracks(true)" tabindex="0">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Clear Tracks</span>
+      </button>
+    </div>
+    <div style="grid-area: generate; justify-self: center; align-self: center">
+      <button class="mdc-button mdc-button--outlined" id="generate_button" onclick="generate()" tabindex="0">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Generate</span>
+      </button>
+    </div>
+    <div style="grid-area: play; justify-self: center; align-self: center">
+      <button class="mdc-button mdc-button--outlined" id="play_button" onclick="play()" tabindex="0">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Play</span>
+      </button>
+    </div>
+    <div style="grid-area: download; justify-self: center; align-self: center">
+      <button class="mdc-button mdc-button--outlined" id="download_button" onclick="download_midi()" tabindex="0">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Download</span>
+      </button>
+    </div>
+    <div style="grid-area: hyperparam; justify-self: center; align-self: center">
+      <button class="mdc-button mdc-button--outlined" id="hyperparam_button" onclick="open_hyperparam()" tabindex="0">
+        <div class="mdc-button__ripple"></div>
+        <span class="mdc-button__label">Settings</span>
+      </button>
+    </div>
+  </div>
+  <div id="track-container" style="user-select: none;">
+  <div class="track" id="track_0">
+    <div class="track-controls mdc-elevation--z4" style="grid-area: controls">
+      <div style="grid-area: delete-button" id="delete-button">
+  <button class="mdc-icon-button material-icons" id="delete_0-button" tabindex="0">remove_circle</button>
+</div>
+      <div style="grid-area: down-button" id="down-button">
+  <button class="mdc-icon-button material-icons" id="down_0-button" tabindex="0">keyboard_arrow_down</button>
+</div>
+      <div style="grid-area: up-button" id="up-button">
+  <button class="mdc-icon-button material-icons" id="up_0-button" tabindex="0">keyboard_arrow_up</button>
+</div>
+      <div style="grid-area: inst-menu;" id="inst-menu">
+  <div class="mdc-select mdc-select--outlined inst-select" id="inst_0-mo" tabindex="0">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">acoustic_grand_piano</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">inst_0</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="acoustic_grand_piano" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">acoustic_grand_piano</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="bright_acoustic_piano" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">bright_acoustic_piano</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="electric_grand_piano" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">electric_grand_piano</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="honky_tonk_piano" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">honky_tonk_piano</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="electric_piano_1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">electric_piano_1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="electric_piano_2" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">electric_piano_2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="harpsichord" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">harpsichord</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="clavi" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">clavi</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="celesta" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">celesta</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="glockenspiel" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">glockenspiel</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="music_box" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">music_box</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="vibraphone" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">vibraphone</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="marimba" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">marimba</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="xylophone" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">xylophone</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="tubular_bells" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">tubular_bells</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="dulcimer" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">dulcimer</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drawbar_organ" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drawbar_organ</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="percussive_organ" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">percussive_organ</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="rock_organ" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">rock_organ</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="church_organ" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">church_organ</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="reed_organ" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">reed_organ</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="accordion" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">accordion</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="harmonica" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">harmonica</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="tango_accordion" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">tango_accordion</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="acoustic_guitar_nylon" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">acoustic_guitar_nylon</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="acoustic_guitar_steel" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">acoustic_guitar_steel</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="electric_guitar_jazz" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">electric_guitar_jazz</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="electric_guitar_clean" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">electric_guitar_clean</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="electric_guitar_muted" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">electric_guitar_muted</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="overdriven_guitar" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">overdriven_guitar</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="distortion_guitar" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">distortion_guitar</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="guitar_harmonics" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">guitar_harmonics</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="acoustic_bass" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">acoustic_bass</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="electric_bass_finger" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">electric_bass_finger</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="electric_bass_pick" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">electric_bass_pick</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fretless_bass" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fretless_bass</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="slap_bass_1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">slap_bass_1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="slap_bass_2" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">slap_bass_2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="synth_bass_1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">synth_bass_1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="synth_bass_2" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">synth_bass_2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="violin" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">violin</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="viola" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">viola</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="cello" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">cello</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="contrabass" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">contrabass</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="tremolo_strings" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">tremolo_strings</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pizzicato_strings" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pizzicato_strings</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="orchestral_harp" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">orchestral_harp</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="timpani" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">timpani</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="string_ensemble_1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">string_ensemble_1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="string_ensemble_2" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">string_ensemble_2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="synth_strings_1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">synth_strings_1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="synth_strings_2" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">synth_strings_2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="choir_aahs" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">choir_aahs</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="voice_oohs" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">voice_oohs</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="synth_voice" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">synth_voice</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="orchestra_hit" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">orchestra_hit</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="trumpet" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">trumpet</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="trombone" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">trombone</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="tuba" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">tuba</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="muted_trumpet" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">muted_trumpet</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="french_horn" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">french_horn</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="brass_section" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">brass_section</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="synth_brass_1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">synth_brass_1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="synth_brass_2" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">synth_brass_2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="soprano_sax" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">soprano_sax</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="alto_sax" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">alto_sax</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="tenor_sax" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">tenor_sax</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="baritone_sax" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">baritone_sax</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="oboe" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">oboe</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="english_horn" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">english_horn</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="bassoon" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">bassoon</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="clarinet" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">clarinet</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="piccolo" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">piccolo</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="flute" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">flute</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="recorder" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">recorder</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pan_flute" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pan_flute</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="blown_bottle" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">blown_bottle</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="shakuhachi" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">shakuhachi</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="whistle" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">whistle</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="ocarina" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">ocarina</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="lead_1_square" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">lead_1_square</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="lead_2_sawtooth" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">lead_2_sawtooth</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="lead_3_calliope" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">lead_3_calliope</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="lead_4_chiff" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">lead_4_chiff</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="lead_5_charang" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">lead_5_charang</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="lead_6_voice" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">lead_6_voice</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="lead_7_fifths" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">lead_7_fifths</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="lead_8_bass__lead" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">lead_8_bass__lead</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pad_1_new_age" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pad_1_new_age</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pad_2_warm" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pad_2_warm</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pad_3_polysynth" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pad_3_polysynth</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pad_4_choir" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pad_4_choir</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pad_5_bowed" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pad_5_bowed</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pad_6_metallic" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pad_6_metallic</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pad_7_halo" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pad_7_halo</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="pad_8_sweep" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">pad_8_sweep</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fx_1_rain" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fx_1_rain</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fx_2_soundtrack" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fx_2_soundtrack</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fx_3_crystal" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fx_3_crystal</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fx_4_atmosphere" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fx_4_atmosphere</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fx_5_brightness" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fx_5_brightness</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fx_6_goblins" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fx_6_goblins</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fx_7_echoes" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fx_7_echoes</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fx_8_sci_fi" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fx_8_sci_fi</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="sitar" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">sitar</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="banjo" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">banjo</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="shamisen" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">shamisen</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="koto" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">koto</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="kalimba" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">kalimba</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="bag_pipe" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">bag_pipe</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="fiddle" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">fiddle</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="shanai" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">shanai</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="tinkle_bell" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">tinkle_bell</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="agogo" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">agogo</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="steel_drums" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">steel_drums</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="woodblock" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">woodblock</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="taiko_drum" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">taiko_drum</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="melodic_tom" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">melodic_tom</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="synth_drum" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">synth_drum</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="reverse_cymbal" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">reverse_cymbal</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="guitar_fret_noise" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">guitar_fret_noise</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="breath_noise" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">breath_noise</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="seashore" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">seashore</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="bird_tweet" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">bird_tweet</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="telephone_ring" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">telephone_ring</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="helicopter" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">helicopter</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="applause" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">applause</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="gunshot" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">gunshot</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_0" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_0</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_2" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_3" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_3</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_4" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_4</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_5" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_5</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_6" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_6</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_7" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_7</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_8" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_8</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_9" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_9</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_10" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_10</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_11" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_11</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_12" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_12</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_13" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_13</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_14" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_14</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_15" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_15</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_16" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_16</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_17" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_17</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_18" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_18</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_19" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_19</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_20" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_20</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_21" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_21</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_22" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_22</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_23" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_23</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_24" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_24</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_25" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_25</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_26" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_26</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_27" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_27</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_28" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_28</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_29" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_29</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_30" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_30</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_31" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_31</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_32" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_32</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_33" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_33</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_34" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_34</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_35" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_35</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_36" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_36</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_37" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_37</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_38" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_38</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_39" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_39</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_40" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_40</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_41" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_41</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_42" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_42</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_43" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_43</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_44" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_44</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_45" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_45</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_46" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_46</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_47" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_47</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_48" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_48</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_49" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_49</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_50" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_50</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_51" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_51</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_52" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_52</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_53" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_53</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_54" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_54</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_55" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_55</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_56" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_56</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_57" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_57</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_58" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_58</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_59" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_59</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_60" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_60</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_61" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_61</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_62" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_62</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_63" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_63</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_64" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_64</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_65" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_65</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_66" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_66</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_67" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_67</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_68" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_68</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_69" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_69</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_70" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_70</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_71" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_71</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_72" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_72</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_73" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_73</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_74" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_74</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_75" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_75</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_76" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_76</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_77" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_77</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_78" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_78</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_79" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_79</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_80" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_80</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_81" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_81</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_82" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_82</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_83" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_83</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_84" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_84</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_85" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_85</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_86" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_86</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_87" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_87</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_88" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_88</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_89" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_89</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_90" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_90</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_91" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_91</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_92" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_92</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_93" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_93</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_94" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_94</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_95" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_95</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_96" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_96</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_97" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_97</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_98" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_98</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_99" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_99</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_100" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_100</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_101" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_101</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_102" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_102</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_103" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_103</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_104" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_104</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_105" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_105</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_106" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_106</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_107" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_107</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_108" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_108</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_109" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_109</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_110" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_110</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_111" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_111</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_112" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_112</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_113" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_113</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_114" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_114</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_115" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_115</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_116" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_116</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_117" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_117</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_118" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_118</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_119" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_119</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_120" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_120</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_121" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_121</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_122" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_122</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_123" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_123</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_124" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_124</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_125" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_125</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_126" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_126</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="drum_127" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">drum_127</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+      <div style="grid-area: solo-label;">SOLO</div>
+      <div style="grid-area: mute-label;">MUTE</div>
+      <div style="grid-area: resample-label;">AUTOREG</div>
+      <div style="grid-area: ignore-label;">IGNORE</div>
+      <div style="grid-area: solo;" id="solo-switch">
+  <div class="mdc-switch" id="solo_0-so" tabindex="0">
+    <div class="mdc-switch__track"></div>
+    <div class="mdc-switch__thumb-underlay mdc-ripple-upgraded mdc-ripple-upgraded--unbounded" style="--mdc-ripple-fg-size:28px; --mdc-ripple-fg-scale:1.71429; --mdc-ripple-left:10px; --mdc-ripple-top:10px;">
+      <div class="mdc-switch__thumb"></div>
+      <input type="checkbox" id="another-basic-switch" class="mdc-switch__native-control" role="switch" aria-checked="false">
+    </div>
+  </div>
+</div>
+      <div style="grid-area: mute;" id="mute-switch">
+  <div class="mdc-switch" id="mute_0-so" tabindex="0">
+    <div class="mdc-switch__track"></div>
+    <div class="mdc-switch__thumb-underlay mdc-ripple-upgraded mdc-ripple-upgraded--unbounded" style="--mdc-ripple-fg-size:28px; --mdc-ripple-fg-scale:1.71429; --mdc-ripple-left:10px; --mdc-ripple-top:10px;">
+      <div class="mdc-switch__thumb"></div>
+      <input type="checkbox" id="another-basic-switch" class="mdc-switch__native-control" role="switch" aria-checked="false">
+    </div>
+  </div>
+</div>
+      <div style="grid-area: resample;" id="resample-switch">
+  <div class="mdc-switch mdc-switch--checked" id="resample_0-so" tabindex="0">
+    <div class="mdc-switch__track"></div>
+    <div class="mdc-switch__thumb-underlay mdc-ripple-upgraded mdc-ripple-upgraded--unbounded" style="--mdc-ripple-fg-size:28px; --mdc-ripple-fg-scale:1.71429; --mdc-ripple-left:10px; --mdc-ripple-top:10px;">
+      <div class="mdc-switch__thumb"></div>
+      <input type="checkbox" id="another-basic-switch" class="mdc-switch__native-control" role="switch" aria-checked="true">
+    </div>
+  </div>
+</div>
+      <div style="grid-area: ignore;" id="ignore-switch">
+  <div class="mdc-switch" id="ignore_0-so" tabindex="0">
+    <div class="mdc-switch__track"></div>
+    <div class="mdc-switch__thumb-underlay mdc-ripple-upgraded mdc-ripple-upgraded--unbounded" style="--mdc-ripple-fg-size:28px; --mdc-ripple-fg-scale:1.71429; --mdc-ripple-left:10px; --mdc-ripple-top:10px;">
+      <div class="mdc-switch__thumb"></div>
+      <input type="checkbox" id="another-basic-switch" class="mdc-switch__native-control" role="switch" aria-checked="false">
+    </div>
+  </div>
+</div>
+      <div style="grid-area: density-label">DENSITY</div>
+      <div style="grid-area: density-slider; align-self: center;" id="density-slider">
+  <div class="mdc-slider mdc-slider--discrete id-placeholder mdc-slider--disable-touch-action mdc-slider--disabled" role="slider" aria-valuemin="0" aria-valuemax="9" aria-valuenow="5" aria-label="Select Value" data-step="1" id="density-slider_0-slo" aria-disabled="true">
+    <div class="mdc-slider__track-container">
+      <div class="mdc-slider__track" style="transform: scaleX(0.555556);"></div>
+    </div>
+    <div class="mdc-slider__thumb-container" style="transform: translateX(94.4444px) translateX(-50%);">
+      <svg class="mdc-slider__thumb" width="21" height="21">
+        <circle cx="10.5" cy="10.5" r="7.875"></circle>
+      </svg>
+      <div class="mdc-slider__focus-ring"></div>
+    </div>
+  </div>
+</div>
+      <div style="grid-area: density-switch" id="density-switch">
+  <div class="mdc-switch" id="density_0-so">
+    <div class="mdc-switch__track"></div>
+    <div class="mdc-switch__thumb-underlay mdc-ripple-upgraded mdc-ripple-upgraded--unbounded" style="--mdc-ripple-fg-size:28px; --mdc-ripple-fg-scale:1.71429; --mdc-ripple-left:10px; --mdc-ripple-top:10px;">
+      <div class="mdc-switch__thumb"></div>
+      <input type="checkbox" id="another-basic-switch" class="mdc-switch__native-control" role="switch" aria-checked="false">
+    </div>
+  </div>
+</div>
+      <div style="grid-area: poly-min" id="poly-min">
+  <div class="mdc-select mdc-select--outlined poly-select" id="poly_min_0-mo">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">any</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">poly_min_0</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="any" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">any</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="one" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">one</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="two" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">two</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="three" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">three</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="four" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">four</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="five" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">five</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="six" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">six</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+      <div style="grid-area: poly-max" id="poly-max">
+  <div class="mdc-select mdc-select--outlined poly-select" id="poly_max_0-mo">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">any</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">poly_max_0</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="any" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">any</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="one" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">one</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="two" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">two</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="three" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">three</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="four" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">four</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="five" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">five</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="six" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">six</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+      <div style="grid-area: dur-min" id="dur-min">
+  <div class="mdc-select mdc-select--outlined poly-select" id="dur_min_0-mo">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">any</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">dur_min_0</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="any" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">any</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="thirty_second" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">thirty_second</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="sixteenth" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">sixteenth</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="eighth" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">eighth</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="quarter" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">quarter</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="half" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">half</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="whole" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">whole</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+      <div style="grid-area: dur-max" id="dur-max">
+  <div class="mdc-select mdc-select--outlined poly-select" id="dur_max_0-mo">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">any</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">dur_max_0</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="any" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">any</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="thirty_second" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">thirty_second</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="sixteenth" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">sixteenth</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="eighth" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">eighth</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="quarter" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">quarter</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="half" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">half</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="whole" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">whole</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+    <div data-mdl-for="delete_0-button" class="mdl-tooltip" data-upgraded=",MaterialTooltip">Remove this track.</div><div data-mdl-for="up_0-button" class="mdl-tooltip" data-upgraded=",MaterialTooltip">Move this track up.</div><div data-mdl-for="down_0-button" class="mdl-tooltip" data-upgraded=",MaterialTooltip">Move this track down.</div><div data-mdl-for="mute_0-so" class="mdl-tooltip" data-upgraded=",MaterialTooltip">Mute this track.</div><div data-mdl-for="solo_0-so" class="mdl-tooltip" data-upgraded=",MaterialTooltip">Solo this track.</div><div data-mdl-for="inst_0-mo" class="mdl-tooltip mdl-tooltip--right" data-upgraded=",MaterialTooltip">Select an instrument for generation.</div><div data-mdl-for="density-slider0-slo" class="mdl-tooltip" data-upgraded=",MaterialTooltip">Control the note density for generation.</div><div data-mdl-for="resample_0-so" class="mdl-tooltip" data-upgraded=",MaterialTooltip">Autoregressively resample the entire track. Note that this will ignore all content on this track when generating.</div><div data-mdl-for="ignore_0-so" class="mdl-tooltip" data-upgraded=",MaterialTooltip">Do not allow the model to condition generation on this track.</div></div>
+    <div class="roll mdc-elevation--z4" style="grid-area: roll"><svg style="width: 100%; height: 190px;"><rect style="x: 0%; y: 0%; width: 6.25%; height: 100%; fill: rgb(169, 169, 169); stroke: none; stroke-width: 0;"></rect><rect style="x: 6.25%; y: 0%; width: 6.25%; height: 100%; fill: rgb(180, 180, 180); stroke: none; stroke-width: 0;"></rect><rect style="x: 12.5%; y: 0%; width: 6.25%; height: 100%; fill: rgb(169, 169, 169); stroke: none; stroke-width: 0;"></rect><rect style="x: 18.75%; y: 0%; width: 6.25%; height: 100%; fill: rgb(180, 180, 180); stroke: none; stroke-width: 0;"></rect><rect style="x: 25%; y: 0%; width: 6.25%; height: 100%; fill: rgb(169, 169, 169); stroke: none; stroke-width: 0;"></rect><rect style="x: 31.25%; y: 0%; width: 6.25%; height: 100%; fill: rgb(180, 180, 180); stroke: none; stroke-width: 0;"></rect><rect style="x: 37.5%; y: 0%; width: 6.25%; height: 100%; fill: rgb(169, 169, 169); stroke: none; stroke-width: 0;"></rect><rect style="x: 43.75%; y: 0%; width: 6.25%; height: 100%; fill: rgb(180, 180, 180); stroke: none; stroke-width: 0;"></rect><rect style="x: 50%; y: 0%; width: 6.25%; height: 100%; fill: rgb(169, 169, 169); stroke: none; stroke-width: 0;"></rect><rect style="x: 56.25%; y: 0%; width: 6.25%; height: 100%; fill: rgb(180, 180, 180); stroke: none; stroke-width: 0;"></rect><rect style="x: 62.5%; y: 0%; width: 6.25%; height: 100%; fill: rgb(169, 169, 169); stroke: none; stroke-width: 0;"></rect><rect style="x: 68.75%; y: 0%; width: 6.25%; height: 100%; fill: rgb(180, 180, 180); stroke: none; stroke-width: 0;"></rect><rect style="x: 75%; y: 0%; width: 6.25%; height: 100%; fill: rgb(169, 169, 169); stroke: none; stroke-width: 0;"></rect><rect style="x: 81.25%; y: 0%; width: 6.25%; height: 100%; fill: rgb(180, 180, 180); stroke: none; stroke-width: 0;"></rect><rect style="x: 87.5%; y: 0%; width: 6.25%; height: 100%; fill: rgb(169, 169, 169); stroke: none; stroke-width: 0;"></rect><rect style="x: 93.75%; y: 0%; width: 6.25%; height: 100%; fill: rgb(180, 180, 180); stroke: none; stroke-width: 0;"></rect><rect style="x: 0%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 0.78125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 1.5625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 2.34375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 3.125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 3.90625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 4.6875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 5.46875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 6.25%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 7.03125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 7.8125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 8.59375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 9.375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 10.1562%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 10.9375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 11.7188%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 12.5%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 13.2812%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 14.0625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 14.8438%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 15.625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 16.4062%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 17.1875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 17.9688%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 18.75%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 19.5312%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 20.3125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 21.0938%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 21.875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 22.6562%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 23.4375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 24.2188%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 25%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 25.7812%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 26.5625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 27.3438%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 28.125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 28.9062%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 29.6875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 30.4688%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 31.25%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 32.0312%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 32.8125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 33.5938%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 34.375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 35.1562%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 35.9375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 36.7188%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 37.5%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 38.2812%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 39.0625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 39.8438%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 40.625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 41.4062%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 42.1875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 42.9688%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 43.75%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 44.5312%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 45.3125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 46.0938%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 46.875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 47.6562%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 48.4375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 49.2188%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 50%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 50.7812%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 51.5625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 52.3438%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 53.125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 53.9062%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 54.6875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 55.4688%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 56.25%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 57.0312%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 57.8125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 58.5938%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 59.375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 60.1562%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 60.9375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 61.7188%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 62.5%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 63.2812%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 64.0625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 64.8438%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 65.625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 66.4062%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 67.1875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 67.9688%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 68.75%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 69.5312%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 70.3125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 71.0938%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 71.875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 72.6562%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 73.4375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 74.2188%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 75%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 75.7812%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 76.5625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 77.3438%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 78.125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 78.9062%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 79.6875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 80.4688%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 81.25%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 82.0312%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 82.8125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 83.5938%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 84.375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 85.1562%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 85.9375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 86.7188%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 87.5%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 88.2812%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 89.0625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 89.8438%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 90.625%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 91.4062%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 92.1875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 92.9688%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 93.75%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 94.5312%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 95.3125%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 96.0938%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 96.875%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 97.6562%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 98.4375%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect style="x: 99.2188%; y: 0%; width: 0.78125%; height: 100%; fill: none; stroke: rgb(158, 158, 158); stroke-width: 0.15;"></rect><rect id="CONTEXT_0_bar_0" style="x: 0%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_0" style="x: 0%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_0" style="x: 0%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_0" style="x: 0%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_0" style="x: 0%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_0" style="x: 0%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_1" style="x: 6.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_1" style="x: 6.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_1" style="x: 6.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_1" style="x: 6.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_1" style="x: 6.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_1" style="x: 6.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_2" style="x: 12.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_2" style="x: 12.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_2" style="x: 12.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_2" style="x: 12.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_2" style="x: 12.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_2" style="x: 12.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_3" style="x: 18.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_3" style="x: 18.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_3" style="x: 18.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_3" style="x: 18.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_3" style="x: 18.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_3" style="x: 18.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_4" style="x: 25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_4" style="x: 25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_4" style="x: 25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_4" style="x: 25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_4" style="x: 25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_4" style="x: 25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_5" style="x: 31.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_5" style="x: 31.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_5" style="x: 31.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_5" style="x: 31.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_5" style="x: 31.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_5" style="x: 31.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_6" style="x: 37.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_6" style="x: 37.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_6" style="x: 37.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_6" style="x: 37.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_6" style="x: 37.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_6" style="x: 37.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_7" style="x: 43.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_7" style="x: 43.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_7" style="x: 43.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_7" style="x: 43.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_7" style="x: 43.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_7" style="x: 43.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_8" style="x: 50%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_8" style="x: 50%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_8" style="x: 50%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_8" style="x: 50%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_8" style="x: 50%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_8" style="x: 50%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_9" style="x: 56.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_9" style="x: 56.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_9" style="x: 56.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_9" style="x: 56.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_9" style="x: 56.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_9" style="x: 56.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_10" style="x: 62.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_10" style="x: 62.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_10" style="x: 62.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_10" style="x: 62.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_10" style="x: 62.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_10" style="x: 62.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_11" style="x: 68.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_11" style="x: 68.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_11" style="x: 68.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_11" style="x: 68.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_11" style="x: 68.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_11" style="x: 68.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_12" style="x: 75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_12" style="x: 75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_12" style="x: 75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_12" style="x: 75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_12" style="x: 75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_12" style="x: 75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_13" style="x: 81.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_13" style="x: 81.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_13" style="x: 81.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_13" style="x: 81.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_13" style="x: 81.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_13" style="x: 81.25%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_14" style="x: 87.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_14" style="x: 87.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_14" style="x: 87.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_14" style="x: 87.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_14" style="x: 87.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_14" style="x: 87.5%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect><rect id="CONTEXT_0_bar_15" style="x: 93.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="PROGRESS_0_bar_15" style="x: 93.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="GENERATED_0_bar_15" style="x: 93.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="IGNORE_0_bar_15" style="x: 93.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="SELECT_0_bar_15" style="x: 93.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 0, 0); stroke: none; stroke-width: 0;"></rect><rect id="highlight_track_0_bar_15" style="x: 93.75%; y: 0%; width: 6.25%; height: 100%; fill: rgba(0, 0, 255, 0.3); stroke: none; stroke-width: 0;"></rect></svg></div>
+  </div>
+  
+</div>
+  <div class="hyperparam-wrapper mdc-elevation--z4" id="hyper-container">
+  <div class="hyperparam-controls" id="hyperparam">
+    <div style="grid-area: close" id="close">
+  <button class="mdc-icon-button material-icons" id="close-button">remove_circle</button>
+</div>
+    <div style="grid-area: param3; align-self: center;">TRACKS PER STEP</div>
+    <div style="grid-area: param3-select" id="param3-select">
+  <div class="mdc-select mdc-select--outlined inst-select" id="tracks_per_step-mo" tabindex="0">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">1</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">tracks_per_step</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="1" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="2" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="3" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">3</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="4" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">4</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="5" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">5</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="6" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">6</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="7" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">7</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="8" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">8</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+    <div style="grid-area: param4; align-self: center;">BARS PER STEP</div>
+    <div style="grid-area: param4-select" id="param4-select">
+  <div class="mdc-select mdc-select--outlined inst-select" id="bars_per_step-mo" tabindex="0">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">2</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">bars_per_step</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font" data-value="1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">1</span>
+  </li>
+
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="2" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">2</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="3" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">3</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="4" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">4</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="5" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">5</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="6" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">6</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="7" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">7</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="8" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">8</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+    <div style="grid-area: param6; align-self: center;">SHUFFLE</div>
+    <div style="grid-area: param6-select; align-self: center;" id="param6-select">
+  <div class="mdc-switch mdc-switch--checked" id="shuffle-so" tabindex="0">
+    <div class="mdc-switch__track"></div>
+    <div class="mdc-switch__thumb-underlay mdc-ripple-upgraded mdc-ripple-upgraded--unbounded" style="--mdc-ripple-fg-size:0px; --mdc-ripple-fg-scale:NaN; --mdc-ripple-left:0px; --mdc-ripple-top:0px;">
+      <div class="mdc-switch__thumb"></div>
+      <input type="checkbox" id="another-basic-switch" class="mdc-switch__native-control" role="switch" aria-checked="true">
+    </div>
+  </div>
+</div>
+    <div style="grid-area: param7; align-self: center;">PERCENTAGE</div>
+    <div style="grid-area: param7-select; align-self: center;" id="param7-select">
+  <div class="mdc-slider mdc-slider--discrete id-placeholder mdc-slider--disable-touch-action" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-label="Select Value" data-step="1" id="percentage-slo">
+    <div class="mdc-slider__track-container">
+      <div class="mdc-slider__track" style="transform: scaleX(1);"></div>
+    </div>
+    <div class="mdc-slider__thumb-container" style="transform: translateX(0px) translateX(-50%);">
+      <svg class="mdc-slider__thumb" width="21" height="21">
+        <circle cx="10.5" cy="10.5" r="7.875"></circle>
+      </svg>
+      <div class="mdc-slider__focus-ring"></div>
+    </div>
+  </div>
+</div>
+    <div style="grid-area: param8; align-self: center;">TEMPERATURE</div>
+    <div style="grid-area: param8-select; align-self: center;" id="param8-select">
+  <div class="mdc-select mdc-select--outlined inst-select" id="temperature-mo" tabindex="0">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">1</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">temperature</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font" data-value="0.9" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">0.9</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="0.95" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">0.95</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="0.975" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">0.975</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="0.99" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">0.99</span>
+  </li>
+
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="1" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">1</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="1.01" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">1.01</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="1.025" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">1.025</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="1.05" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">1.05</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="1.1" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">1.1</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+    <div style="grid-area: param9; align-self: center;">MODEL SIZE</div>
+    <div style="grid-area: param9-select; align-self: center;" id="param9-select">
+  <div class="mdc-select mdc-select--outlined inst-select" id="model_size-mo" tabindex="0">
+    <div class="mdc-select__anchor" aria-labelledby="outlined-select-label" tabindex="0" aria-disabled="false">
+      <span class="mdc-select__selected-text small-font">4</span>
+      <span class="mdc-select__dropdown-icon">
+        <svg class="mdc-select__dropdown-icon-graphic" viewBox="7 10 10 5">
+          <polygon class="mdc-select__dropdown-icon-inactive" stroke="none" fill-rule="evenodd" points="7 10 12 15 17 10">
+          </polygon>
+          <polygon class="mdc-select__dropdown-icon-active" stroke="none" fill-rule="evenodd" points="7 15 12 10 17 15">
+          </polygon>
+        </svg>
+      </span>
+      <span class="mdc-floating-label small-font push-down mdc-floating-label--float-above">model_size</span>
+    </div>
+  
+    <div class="mdc-select__menu mdc-menu mdc-menu-surface mdc-menu-surface--fullwidth small-menu">
+      <ul class="mdc-list">
+      
+  <li class="mdc-list-item small-font mdc-list-item--selected" data-value="4" tabindex="-1" aria-selected="true">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">4</span>
+  </li>
+
+  <li class="mdc-list-item small-font" data-value="8" tabindex="-1">
+    <span class="mdc-list-item__ripple"></span>
+    <span class="mdc-list-item__text">8</span>
+  </li>
+</ul>
+    </div>
+  </div>
+</div>
+  <div data-mdl-for="tracks_per_step-mo" class="mdl-tooltip mdl-tooltip--right" data-upgraded=",MaterialTooltip">The maximum number of tracks to generate each step. Selecting a larger value will increase variability of the generated output.</div><div data-mdl-for="bars_per_step-mo" class="mdl-tooltip mdl-tooltip--right" data-upgraded=",MaterialTooltip">The maximum number of bars to generate each step. Selecting a larger value with increase variability of the generated output.</div><div data-mdl-for="shuffle-so" class="mdl-tooltip mdl-tooltip--right" data-upgraded=",MaterialTooltip">When shuffle is enabled the order of generation steps is randomly shuffled. Note that this only applies to non-autoregressive tracks</div><div data-mdl-for="percentage-slo" class="mdl-tooltip mdl-tooltip--right" data-upgraded=",MaterialTooltip">The percentage of selected bars that are resampled. Note that this only applies to non-autoregressive tracks.</div><div data-mdl-for="temperature-mo" class="mdl-tooltip mdl-tooltip--right" data-upgraded=",MaterialTooltip">Set temperature for samping. Values higher than 1 increase entropy and values lower than 1 decrease entropy.</div><div data-mdl-for="model_size-mo" class="mdl-tooltip mdl-tooltip--right" data-upgraded=",MaterialTooltip">The number of bars the model can handle. A higher value will take more time, as each generation step takes more context into consideration, but will likely provide a better result.</div></div>
+</div>
+
+  <input type="file" id="file_loader" style="display:none;">
+  <div id="hiddenContainer" style="display: none;">
+    <audio id="beep" controls="" src=""></audio>
+  </div>
+
+  <div id="snackbar" class="mdc-snackbar" style="position: absolute; top: 0px;">
+    <div class="mdc-snackbar__surface" style="position: absolute; top: 0px;">
+      <div class="mdc-snackbar__label" role="status" aria-live="polite">
+        Default Message.
+      </div>
+      <div class="mdc-snackbar__actions">
+        <button type="button" class="mdc-button mdc-snackbar__action">
+          <div class="mdc-button__ripple"></div>
+          <span class="mdc-button__label">Retry</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay"></div>
+
+  <!-- TOOL TIPS -->
+  <div class="mdl-tooltip" for="add_track_button" data-upgraded=",MaterialTooltip">
+    Add a new track below.
+  </div>
+  <div class="mdl-tooltip" for="add_midi_button" data-upgraded=",MaterialTooltip">
+    Upload a MIDI file.
+  </div>
+  <div class="mdl-tooltip" for="generate_button" data-upgraded=",MaterialTooltip">
+    Generate the highlighted bars and tracks.
+  </div>
+  <div class="mdl-tooltip" for="play_button" data-upgraded=",MaterialTooltip">
+    Play all non-muted tracks.
+  </div>
+  <div class="mdl-tooltip" for="clear_tracks_button" data-upgraded=",MaterialTooltip">
+    Remove all tracks.
+  </div>
+  <div class="mdl-tooltip" for="download_button" data-upgraded=",MaterialTooltip">
+    Download as a MIDI.
+  </div>
+  <div class="mdl-tooltip" for="hyperparam_button" data-upgraded=",MaterialTooltip">
+    Open the advanced settings tab.
+  </div>
+  
+
+
+</body><div id="coupon-birds-div"></div></html>
